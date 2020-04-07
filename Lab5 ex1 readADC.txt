@@ -1,0 +1,61 @@
+                  int var = 0;
+                  int acdlX = 0, acdhX = 0;
+
+void display(int poz, int car)
+{
+     PORTA &= 0b11110000;
+     PORTC &= 0b00000000;
+     PORTA |= (1<<poz);
+     switch(car)
+        {
+             case 0:  PORTC |=0b00111111;break;
+             case 1:  PORTC |=0b00000110;break;
+             case 2:  PORTC |=0b01011011;break;
+             case 3:  PORTC |=0b01001111;break;
+             case 4:  PORTC |=0b01100110;break;
+             case 5:  PORTC |=0b01101101;break;
+             case 6:  PORTC |=0b01111101;break;
+             case 7:  PORTC |=0b00000111;break;
+             case 8:  PORTC |=0b01111111;break;
+             case 9:  PORTC |=0b01101111;break;
+        }
+}
+
+void Init_adc()
+{
+      ADMUX = 0b01000000; //Referinta - AVCC
+      ADCSRA= 0b10000111; //Activare ADC; Prescaler = 128;
+}
+
+//cu cat frecventa e mai mica cu atat rezultatul conversiei e mai precis
+
+int readADC (char ch) //ch repr canalul pe care se face conversia
+{ 		      //in cazul de fata 5 sau 6
+
+    ADMUX &= 0b11100000;   //Reseteazã canalul de conversie, ultimii 5 de 0 repr canalul
+    ADMUX |= ch;   //Seteazã canalul conversiei
+    ADCSRA |= (1<<6);   //Începe conversia
+    while(ADCSRA & (1<<6)) ;   //Asteaptã finalizarea conv.
+    acdlX = ADCL;  //ADC LOW byte 
+    acdhX = ADCH;  //ADC HIGH byte
+    return ((acdhX << 8) | acdlX);
+	//^ca sa obtinem primii 8 biti de la adchX urmati
+	//de cei de la adclX
+}
+
+void main()
+{    
+     DDRA = 0b00001111; //seteazã pinii de iesire
+     DDRC = 0b11111111;
+
+     Init_adc();
+     while(1)
+     {         
+               var = readADC(5);
+               display(0,var%10);
+               display(1,(var/10)%10);
+               display(2,(var/100)%10);
+               display(3,(var/1000)%10);
+     }
+     
+}

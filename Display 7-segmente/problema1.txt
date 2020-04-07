@@ -1,0 +1,21 @@
+Sa afi?eze pe display un numar de 4 cifre.
+void main() {
+           DDRA=0b00001111;
+           DDRC=0b11111111;
+           for(;;)
+           {
+            PORTA=(1<<3);
+            PORTC=0b00000111;
+            delay_ms(4);
+            PORTA=(1<<2);
+            PORTC=0b00000110;
+            delay_ms(4);
+            PORTA=(1<<1);
+            PORTC=0b01110111;
+            delay_ms(4);
+            PORTA=1;
+            PORTC=0b01111101;
+            delay_ms(4);
+            
+}
+}

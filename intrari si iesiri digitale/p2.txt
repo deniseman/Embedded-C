@@ -1,0 +1,19 @@
+Sa se schimbe starea LED-ul asociat pinului PB6 de fiecare data când butonul asociat
+pinului PB2 este apasat.
+char starePB2=0;
+
+void main() {
+DDRB |= (1<<6); //PB6 – Ie.ire
+DDRB &= ~(1<<2); //PB2 – Intrare
+
+for(;;)
+{if(PINB & (1<<2)) //testare pin PB2
+  { if(starePB2 == 0) //variabila va .ine minte starea
+  { starePB2 = 1; //anterioara a pin-ului PB2
+  PORTB ^= (1<<6); //se schimba starea LED-ului
+  }
+  }else
+  starePB2 = 0;
+}
+
+}

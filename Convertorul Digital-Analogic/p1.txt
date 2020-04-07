@@ -1,0 +1,38 @@
+Generarea unui semnal sinusoidal folosind semnal PWM pe pinul PD7 ?i un filtru RC
+trece-jos.
+int ms=0,i=0;
+int sinus[] ={128,167,202,231,249,255,249,231,202,167,128,88,53,24,6,0,6,24,53,88} ;
+
+
+void init_timer(){
+SREG = 1<<7; // Global Interrupt Enable
+TCCR0 = 0b00001011; //CTC-3,6; Prescaler-0,1,2
+TCNT0 = 0;
+OCR0 = 12;
+TIMSK |= 0b00000010; //set interrupt OCM
+}
+
+void init_PWM2()
+{
+     DDRD |= 1<<7; //PD7 – pin de ie.ire
+     TCCR2 = 0b01101001; //FastPWM neinversat, N=1
+}
+
+void Antrerupere() iv IVT_ADDR_TIMER0_COMP ics ICS_AUTO
+{
+    if (ms==4){ //Perioada sinus T =5*20= =100ms =>f =10Hz
+    OCR2 = sinus[i++]; //factor de umplere = valoarea sinusului 
+    if(i==20) //resetarea contorului
+      i=0;
+    ms=0; 
+    }else ms++;
+}
+
+
+void main() {
+     init_timer();
+     init_PWM2();
+     while(1)
+     {}
+
+}

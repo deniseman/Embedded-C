@@ -1,0 +1,66 @@
+
+void init_timer(){
+	SREG = 1<<7; // Global Interrupt Enable
+	TCCR0 = 0b00001011; //CTC-3,6; Prescaler-0,1,2
+//bitii 3 si 6(WGM01:0) se va alege modul ca CTC
+//pt a reseta registrul daca TCNT0=OCR0
+	TCNT0 = 0;
+	OCR0 = 125; //se va copia valoarea pana 
+		    //la care sa se reseteze timer-ul
+		    //(CS02:0)	
+	TIMSK |= 0b00000010; //set interrupt OCM
+}
+
+void display(int poz, int car)
+{
+     PORTA &= 0b11110000;
+     PORTC &= 0b00000000;
+     PORTA |= (1<<poz);
+     switch(car)
+        {
+        case 0:  PORTC |=0b00111111;break;
+        case 1:  PORTC |=0b00000110;break;
+        case 2:  PORTC |=0b01011011;break;
+        case 3:  PORTC |=0b01001111;break;
+        case 4:  PORTC |=0b01100110;break;
+        case 5:  PORTC |=0b01101101;break;
+        case 6:  PORTC |=0b01111101;break;
+        case 7:  PORTC |=0b00000111;break;
+        case 8:  PORTC |=0b01111111;break;
+        case 9:  PORTC |=0b01101111;break;
+        }
+}
+
+int digit,s,ms,m;
+
+//se apeleaza automat, apare optiunea la scrierea "iv"
+
+void Antrerupere() iv IVT_ADDR_TIMER0_COMP ics ICS_AUTO 
+{
+	digit++;
+	switch(digit){ //se foloseste pt ca la fiecare ms
+	//sa se afiseze un nou caracter pe o alta pozitie a displayului
+	case 1: display(0,s%10); break;
+	case 2: display(1,(s/10)%10); break;
+	case 3: display(2,m%10); break;
+	case 4: display(3,(m/10)%10); digit=0; break;
+	}
+	if (ms == 999)
+	{
+		s++;
+		ms = 0;
+		if(s == 60)
+			{
+				s = 0;
+				m++;
+			}
+	}
+	else ms++;
+}
+
+void main(){
+DDRA = 0b00001111; //seteazã pinii de iesire
+DDRC = 0b11111111;
+init_timer();
+for(;;);
+}

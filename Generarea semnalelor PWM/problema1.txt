@@ -1,0 +1,111 @@
+Generarea unui semnal PWM cu factor de umplere variabil pe pinul PD7.
+
+
+int digit=0,s=0,m=0,ms=0,adc_l=0,adc_h=0,n=0;
+int rpm, value=0; long cycle=0, trot, icr_l, icr_h;
+void display(char p, char c)
+{
+    PORTA &= 0b11110000; //liniile de sel. digit - oprite
+    PORTC &= 0b00000000; //liniile de sel. Seg. - oprite
+    switch(c){
+      case 0:
+      PORTC |= 0b00111111;break;//codificare cifra 0
+       case 1:
+      PORTC |= 0b00000110;break;//codificare cifra 1
+       case 2:
+      PORTC |= 0b01011011;break;//codificare cifra 2
+       case 3:
+      PORTC |= 0b01001111;break;//codificare cifra 3
+       case 4:
+      PORTC |= 0b01100110;break;//codificare cifra 4
+       case 5:
+      PORTC |= 0b01101101;break;//codificare cifra 5
+       case 6:
+      PORTC |= 0b01111101;break;//codificare cifra 6
+       case 7:
+      PORTC |= 0b00000111;break;//codificare cifra 7
+       case 8:
+      PORTC |= 0b01111111;break;//codificare cifra 8
+       case 9:
+      PORTC |= 0b01101111;break;//codificare cifra 9
+    }
+    switch(p){
+      case 4:
+      PORTA |= 0b00001000;break;//activare digit 1
+      case 3:
+      PORTA |= 0b00000100;break;//activare digit 2
+      case 2:
+      PORTA |= 0b00000010;break;//activare digit 3
+      case 1:
+      PORTA |= 0b00000001;break;//activare digit 4
+    }
+}
+/*void Init_INT0(){
+      GICR |= (1<<6); // activarea întreruperii externe INT0
+      MCUCR |= 0b00000010; // precizare cã evenimentul va avea
+      // loc pe frontul descrescãtor
+
+}
+      */
+
+void init_PWM2(){
+DDRD |= 1<<7; //PD7 – pin de ie.ire 
+TCCR2 = 0b01101001; //FastPWM neinversat, N=1 
+}
+
+void Init_adc(){
+     ADMUX = 0b01000000; //Referin.a - AVCC
+     ADCSRA= 0b10000111; //Activare ADC; Prescaler = 128;
+}
+
+void init_timer(){
+
+        TCCR0 = 0b00001011; //CTC-3,6; Prescaler-0,1,2
+        TCNT0 = 0;
+        OCR0 = 125;
+        TIMSK |= 0b00000010; //set interrupt OCM
+}
+
+int readADC (char ch){
+    ADMUX &= 0b11100000; //Reseteazã canalul de conversie
+    ADMUX |= ch; //Seteazã canalul conversiei
+    ADCSRA |= (1<<6); //Începe conversia
+    while(ADCSRA & (1<<6)); //A.teaptã finalizarea conversiei
+    adc_l = ADCL; adc_h = ADCH; return ((adc_h << 8) | adc_l); }
+
+void OC_ISR() iv IVT_ADDR_TIMER0_COMP ics ICS_AUTO {
+        digit++;
+        switch(digit){
+        case 1: display(1,rpm%10); break;
+        case 2: display(2,(rpm/10)%10); break;
+        case 3: display(3,(rpm/100)%10); break;
+        case 4: display(4,(rpm/1000)%10);
+                digit=0; break;}
+        if (ms==99){ 
+        n = (readADC(6)/4);
+        OCR2 = n;
+        ms=0; 
+        }else ms++;
+}
+void Init_Input_Capture(){ DDRD &=~(1<<6); //PD6 - intrare TCCR1A = 0b00000000;
+TCCR1B = 0b01000010;//bit 6–front crescãtor,bit0-2Pre=8
+TIMSK |= 1<<5; //Input Capture Interrupt Enable
+TIMSK |= 1<<2; //Overflow Interrupt Enable 
+}
+
+void IC_ISR() iv IVT_ADDR_TIMER1_CAPT ics ICS_AUTO { TCNT1H=0; TCNT1L=0; icr_l = ICR1L; icr_h = ICR1H; trot = (((icr_h << 8) | icr_l)+65536*cycle)*300; rpm = 60000000/trot; cycle=0; }
+void COMP_ISR() iv IVT_ADDR_TIMER1_OVF ics ICS_AUTO { cycle++; }
+
+void main(){
+
+        DDRA = 0b00001111; //seteazã pinii de ie.ire
+        DDRC = 0b11111111;
+
+
+        init_PWM2();
+        init_timer();
+        init_adc();
+        Init_Input_Capture()    ;
+        SREG |= (1<<7); // activarea globala a întreruperilor
+        for(;;);
+}

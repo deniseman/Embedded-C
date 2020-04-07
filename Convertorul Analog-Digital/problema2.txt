@@ -1,0 +1,113 @@
+Citirea senzorului de temperatura folosind întreruperi
+
+int digit=0,s=0,m=0,ms=0,n=0;
+int adc_l, adc_h, adc, T;
+float Vin, tmp;
+
+void display(char p, char c)
+{
+    PORTA &= 0b11110000; //liniile de sel. digit - oprite
+    PORTC &= 0b00000000; //liniile de sel. Seg. - oprite
+    switch(c){
+      case 0:
+      PORTC |= 0b00111111;break;//codificare cifra 0
+       case 1:
+      PORTC |= 0b00000110;break;//codificare cifra 1
+       case 2:
+      PORTC |= 0b01011011;break;//codificare cifra 2
+       case 3:
+      PORTC |= 0b01001111;break;//codificare cifra 3
+       case 4:
+      PORTC |= 0b01100110;break;//codificare cifra 4
+       case 5:
+      PORTC |= 0b01101101;break;//codificare cifra 5
+       case 6:
+      PORTC |= 0b01111101;break;//codificare cifra 6
+       case 7:
+      PORTC |= 0b00000111;break;//codificare cifra 7
+       case 8:
+      PORTC |= 0b01111111;break;//codificare cifra 8
+       case 9:
+      PORTC |= 0b01101111;break;//codificare cifra 9
+    }
+    switch(p){
+      case 4:
+      PORTA |= 0b00001000;break;//activare digit 1
+      case 3:
+      PORTA |= 0b00000100;break;//activare digit 2
+      case 2:
+      PORTA |= 0b00000010;break;//activare digit 3
+      case 1:
+      PORTA |= 0b00000001;break;//activare digit 4
+    }
+}
+/*void Init_INT0(){
+      GICR |= (1<<6); // activarea întreruperii externe INT0
+      MCUCR |= 0b00000010; // precizare cã evenimentul va avea
+      // loc pe frontul descrescãtor
+
+}
+      */
+
+
+void init_timer(){
+
+        TCCR0 = 0b00001011; //CTC-3,6; Prescaler-0,1,2
+        TCNT0 = 0;
+        OCR0 = 125;
+        TIMSK |= 0b10000010; //set interrupt OCM
+}
+
+int readADC (char ch){
+    ADMUX &= 0b11100000; //Reseteazã canalul de conversie
+    ADMUX |= ch; //Seteazã canalul conversiei
+    ADCSRA |= (1<<6); //Începe conversia
+    while(ADCSRA & (1<<6)); //A.teaptã finalizarea conversiei
+    adc_l = ADCL; adc_h = ADCH; return ((adc_h << 8) | adc_l); }
+void init_adc(){
+    ADMUX = 0b01000000; //Referin.a -
+    ADCSRA = 0b10000111; //Activare ADC; Prescaler = 128;
+    ADCSRA |= (1<<3); //Activare întrerupere  ADIE
+}
+
+void ADC_Completed() iv IVT_ADDR_ADC
+{ adc_l = ADCL;
+    adc_h = ADCH;
+    adc = ((adc_h << 8) | adc_l);
+    Vin = ((float)adc*5)/1024;
+    tmp = Vin*1000;
+    T = (int)tmp;
+    n=T;}
+
+void readADC_interrupt(char ch){
+    ADMUX &= 0b11100000; //Reseteazã canalul de conversie
+    ADMUX |= ch; //Seteazã canalul conversiei
+    ADCSRA |= (1<<6); //Începe conversia
+         }
+         
+void OC_ISR() iv IVT_ADDR_TIMER0_COMP ics ICS_AUTO {
+        digit++;
+        switch(digit){
+        case 1: display(1,n%10); break;
+        case 2: display(2,(n/10)%10); break;
+        case 3: display(3,(n/100)%10); break;
+        case 4: display(4,(n/1000)%10);
+                digit=0; break;}
+        if(ms==999){
+                    readADC_interrupt(7);
+                    ms=0;
+        }
+        else ms++;
+
+}
+
+void main(){
+
+        DDRA = 0b00001111; //seteazã pinii de ie.ire
+        DDRC = 0b11111111;
+
+        init_timer();
+        init_adc();
+        SREG |= (1<<7); // activarea globala a întreruperilor
+        for(;;);
+}

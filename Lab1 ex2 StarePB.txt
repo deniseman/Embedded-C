@@ -1,0 +1,21 @@
+void main() 
+{
+              int starePB2=0;
+              DDRB |= (1<<6);
+              DDRB &= ~(1<<2);
+              
+
+     for(;;)
+     {
+         if(PINB & (1<<2)) //daca se apasa PB2
+         {
+                  if(starePB2 == 0)  //si starea anterioara a fost 0
+                  { 
+                              starePB2 = 1; //se face starea 1
+                              PORTB ^= (1<<6); //XOR schimba 1->0 si 0->1
+                  }
+         }
+         else
+             starePB2 = 0; //daca nu a fost apasat se face starea 0
+     }
+}

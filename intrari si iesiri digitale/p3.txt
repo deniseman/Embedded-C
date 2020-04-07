@@ -1,0 +1,32 @@
+Sa se incrementeze o variabila la fiecare apasare a butonului PB2 si valoarea acesteia
+sa se codifice pe LED-urile din PORTD. Astfel se vor afi?a valori de la 0 la 255.
+char starePB2=0,n=0,starePC2=0;
+void main() {
+     DDRD |= 0b11111111; //PB6 – Ie.ire
+     DDRB &= ~(1<<2); //PB2 – Intrare
+     DDRA&=(1<<2);//resetare
+     for(;;)
+     {     
+         if(PINB & (1<<2)) //testare pin PB2
+        { 
+	 	if(starePB2 == 0) //variabila va .ine minte starea
+       			{ starePB2 = 1; //anterioara a pin-ului PB2
+        	  	n++; //se incrementeaza variabila n
+        		}
+        }else
+        starePB2 = 0;
+        
+        if(PINC & (1<<2)) //testare pin PC2
+        { if(starePC2 == 0) //variabila va .ine minte starea
+        { starePC2 = 1; //anterioara a pin-ului PB2
+        n--; //se incrementeaza variabila n
+        }
+        }else
+        starePC2 = 0;
+
+        if(PINA&(1<<2))
+              n=0;     
+        PORTD = n;
+     }
+
+}

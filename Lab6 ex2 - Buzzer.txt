@@ -1,0 +1,108 @@
+int var = 0;
+int acdlX = 0, acdhX = 0;
+int value, ms,digit = 0;
+int ADCMax=1023, fMax=20000, fMin=20, freq, icr, TOP,adv;
+
+void display(int poz, int car)
+{
+     PORTA &= 0b11110000;
+     PORTC &= 0b00000000;
+     PORTA |= (1<<poz);
+     switch(car)
+        {
+             case 0:  PORTC |=0b00111111;break;
+             case 1:  PORTC |=0b00000110;break;
+             case 2:  PORTC |=0b01011011;break;
+             case 3:  PORTC |=0b01001111;break;
+             case 4:  PORTC |=0b01100110;break;
+             case 5:  PORTC |=0b01101101;break;
+             case 6:  PORTC |=0b01111101;break;
+             case 7:  PORTC |=0b00000111;break;
+             case 8:  PORTC |=0b01111111;break;
+             case 9:  PORTC |=0b01101111;break;
+        }
+}
+
+void Init_adc()
+{
+      ADMUX = 0b01000000; //Referinta - AVCC
+      ADCSRA= 0b10000111; //Activare CDA; Prescaler = 128;
+}
+
+int readADC (char ch)
+{
+    ADMUX &= 0b11100000; //Reseteazã canalul de conversie, ultimii 5 de 0 repr canalul
+    ADMUX |= ch; //Seteazã canalul conv.
+    ADCSRA |= (1<<6); //Începe conversia
+    while(ADCSRA & (1<<6)) ; //Asteaptã finalizarea conv.
+    acdlX = ADCL;
+    acdhX = ADCH;
+    return (acdhX << 8 | acdlX);
+}
+
+void init_timer(){
+SREG = 1<<7; // Global Interrupt Enable
+TCCR0 = 0b00001011; //CTC-3,6; Prescaler-0,1,2
+TCNT0 = 0;
+OCR0 = 125;
+TIMSK |= 0b00000010; //set interrupt OCM
+}
+
+void init_PWM2()
+{
+     DDRD |= 1<<7; //PD7 – pin de ie.ire
+     TCCR2 = 0b01101001; //FastPWM neinversat, N=1
+}
+
+void Antrerupere() iv IVT_ADDR_TIMER0_COMP ics ICS_AUTO
+{
+     digit ++;
+    switch(digit){
+    case 1: display(0,value%10); break;
+    case 2: display(1,(value/10)%10); break;
+    case 3: display(2,(value/100)%10); break;
+    case 4: display(3,(value/1000)%10); digit=0; break;}
+    /*if (ms == 999)
+    {
+        s++;
+        ms = 0;
+        if(s == 60)
+        {
+             s = 0;
+             m++;
+        }
+    }
+    else ms++;    */
+    
+if (ms == 9){ //la fiecare 10s se apeleaza readadc
+adv = (readadc(6)); //pt a obtine rezultat de pe canalul ADC6 unde e legat potentiometrul
+	//adc=x din ecuatia f(x)=ax+b
+freq = ((float)(fMax-fMin))/ADCmax*adv+fMin; //calc in lab
+	//in freq se calculeaza frecv coresp gradului de rotire a potentiometrului
+TOP = 1000000/freq-1;
+ ICR1H = TOP>>8;
+  ICR1L = TOP; //TOP e din [0;65535] programata in registrul ICR1
+   OCR1BH = ((TOP+1)/2)>>8;
+    OCR1BL = (TOP+1)/2;
+     value=freq/10;ms=0;
+      }else ms++;
+
+}
+
+void init_Buzzer(){ 
+DDRD |= 1<<4; //PD4 - output
+ TCCR1A = 0b00100010; //se va alege ca FastPWM neinversat cu val maxima de numarare TOP
+  TCCR1B = 0b00011010; //factorul de prescalare va fi ales N=8
+   }
+
+void main() {
+     DDRA = 0b00001111; //seteazã pinii de iesire
+     DDRC = 0b11111111;
+     init_Buzzer();
+     init_timer();
+     init_PWM2();
+     Init_adc();
+     while(1)
+     {}
+
+}

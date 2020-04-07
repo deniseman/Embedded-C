@@ -1,0 +1,11 @@
+void main() {
+      DDRB |= (1<<7); //se face pinul PB7 ca iesire
+      DDRB &= ~(1<<3); //se face pinul PB3 ca intrare
+      while(1)
+      {
+                  if(PINB & (1<<3)) //daca PB3 este HIGH atunci
+                      PORTB |= (1<<7);  //PB7 va fi ON si LED-ul aprins
+                      else
+                      PORTB &= ~(1<<7); //altfel PB7 LOW si LED-ul stins
+      }
+}

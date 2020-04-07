@@ -1,0 +1,29 @@
+void main() 
+{
+     int starePB2=0;
+     int n=15; //de aici va incepe incrementarea
+     DDRB |= 0b11111111;
+     DDRB &= ~(1<<2); //PB2 va fi facut intrare
+     DDRB &= ~(1<<5); //pin pus pentru reset la numaratoare
+     
+     while(1)
+     {
+      if(PINB & (1<<2)) //daca PB2 se apasa
+      { 
+              if(starePB2 == 0) //tine minte starea anterioara a lui PB2
+              { 
+                          starePB2 = 1;
+                          n++; //se incrementeaza la apasare
+              }
+      }
+      else
+          starePB2 = 0;
+      if(PINB & (1<<5)) //buton resetare numaratoare
+      {
+              n=15;
+      }
+      
+      PORTD=n; //LED-urile din PORTD primesc valoarea lui n
+     }
+     
+}

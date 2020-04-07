@@ -1,0 +1,108 @@
+int var = 0;
+int acdlX = 0, acdhX = 0;
+int ms,digit = 0;
+int rpm=0, value=0; long cycle=0, trot, icr_l, icr_h;
+
+void display(int poz, int car)
+{
+     PORTA &= 0b11110000;
+     PORTC &= 0b00000000;
+     PORTA |= (1<<poz);
+     switch(car)
+        {
+             case 0:  PORTC |=0b00111111;break;
+             case 1:  PORTC |=0b00000110;break;
+             case 2:  PORTC |=0b01011011;break;
+             case 3:  PORTC |=0b01001111;break;
+             case 4:  PORTC |=0b01100110;break;
+             case 5:  PORTC |=0b01101101;break;
+             case 6:  PORTC |=0b01111101;break;
+             case 7:  PORTC |=0b00000111;break;
+             case 8:  PORTC |=0b01111111;break;
+             case 9:  PORTC |=0b01101111;break;
+        }
+}
+
+void Init_Input_Capture()
+{
+DDRD &=~(1<<6); //PD6(ICP1) - intrare TCCR1A = 0b00000000;
+TCCR1B = 0b01000010;//bit 6–front crescãtor, bit0-2 Pre=8
+TIMSK |= 1<<5; //Input Capture Interrupt Enable
+TIMSK |= 1<<2; //Overflow Interrupt Enable
+
+//la fiecare front crescator detectat pe pinul ICP1 se va salva val registrului
+//de numarare TCNT1 in registrul ICR1 si se va apela functia ISR asociata
+//intreruperea de Overflow contorizeaza numarul de resetari ale numaratorului
+//dupa fiecare intrerupere de Overflow variabila cycle e incrementata
+//si la aparitia unei intreruperi Input Capture cycle se va reseta
+}
+
+void Init_adc()
+{
+      ADMUX = 0b01000000; //Referinta - AVCC
+      ADCSRA= 0b10000111; //Activare CDA; Prescaler = 128;
+}
+
+int readADC (char ch)
+{
+
+    ADMUX &= 0b11100000; //Reseteazã canalul de conversie, ultimii 5 de 0 repr canalul
+    ADMUX |= ch; //Seteazã canalul conv.
+    ADCSRA |= (1<<6); //Începe conversia
+    while(ADCSRA & (1<<6)) ; //Asteaptã finalizarea conv.
+    acdlX = ADCL;
+    acdhX = ADCH;
+    return (acdhX << 8 | acdlX);
+}
+
+ void IC_ISR() iv IVT_ADDR_TIMER1_CAPT ics ICS_AUTO
+ {
+ TCNT1H=0;
+ TCNT1L=0;
+ icr_l = ICR1L;
+ icr_h = ICR1H;
+ trot = (((icr_h << 8) | icr_l)+65536*cycle)*300;
+ rpm = 60000000/trot; cycle=0; //formule din laborator 7
+  }
+ void COMP_ISR() iv IVT_ADDR_TIMER1_OVF ics ICS_AUTO { cycle++;}
+
+void init_timer(){
+SREG = 1<<7; // Global Interrupt Enable
+TCCR0 = 0b00001011; //CTC-3,6; Prescaler-0,1,2
+TCNT0 = 0;
+OCR0 = 125;
+TIMSK |= 0b00000010; //set interrupt OCM
+}
+
+void init_PWM2()
+{
+     DDRD |= 1<<7; //PD7 – pin de ie.ire
+     TCCR2 = 0b01101001; //FastPWM neinversat, N=1
+}
+
+void Antrerupere() iv IVT_ADDR_TIMER0_COMP ics ICS_AUTO
+{
+     digit ++;
+    switch(digit){
+    case 1: display(0,rpm%10); break;
+    case 2: display(1,(rpm/10)%10); break;
+    case 3: display(2,(rpm/100)%10); break;
+    case 4: display(3,(rpm/1000)%10); digit=0; break;}
+    if (ms==99){
+                  OCR2 = readADC(6)/4;
+                 ms=0; }
+             else ms++;
+}
+
+
+void main() {
+     DDRA = 0b00001111; //seteazã pinii de iesire
+     DDRC = 0b11111111;
+     init_timer();
+     init_PWM2();
+     Init_adc();
+     Init_Input_Capture();
+     while(1)
+     {}
+
+}

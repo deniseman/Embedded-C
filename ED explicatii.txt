@@ -1,0 +1,17 @@
+Intrari si iesiri DDR - intrarea se seteaza cu 0, iesirea cu 1
+DDRA&=~(1<<2);//Pin A2 in
+DDRB|=(1<<4);//Pin B4 out
+
+
+Registul pentru pini
+PINA/PINB/PINC
+pentru a aprinde bec se seteaza 1 pe pozitia dorita
+
+la display 7 segmente
+se initializeaza astfel:
+DDRA |= 0b00001111;
+DDRC |= 0b11111111;
+se modifica astfel:
+In PORTA se seteaza 1 bitul pe care dorim sa il modificam
+In PORTC se seteaza cu 1 ledul pe care dorim sa il aprindem de pe pozitia abcdefg si dot
+frecventa PWM= frecventa ceas/(n*256); 256 pentru ca ai 8 biti si ai 2^8

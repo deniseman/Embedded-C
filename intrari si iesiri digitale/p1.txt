@@ -1,0 +1,17 @@
+Sa se aprinda LED-ul asociat pinului PB7 atâta timp cât butonul asociat pinului PB3
+este apasat.
+void main() {
+DDRA&=~(1<<2);//PA2 in
+DDRB  |=(1<<4);//PB4 out
+
+for(;;)
+{
+  if(PINA &(1<<2))//testat eglaitate cu 1
+         PORTB |=(1<<4);//PB4 led ON
+
+  else
+         PORTB&=~(1<<4);//PB4 led OFF
+
+  
+}    
+}
